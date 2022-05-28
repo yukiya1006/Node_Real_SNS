@@ -48,10 +48,10 @@ router.delete('/:id', async(req, res) => {
 router.put('/:id/follow', async (req, res) => {
   if(req.body.userId !== req.params.id ) { //自分のidと対象のidが等しくない場合
     try {
-      const user = await User.findById(req.params.id); //対象のid
+      const user = await User.findById( req.params.id); //対象のid
       const currentUser = await User.findById(req.body.userId); //自分のid
       //フォローしているのか判定
-      //対象のフォロワーに自分が含まれていなければtrue
+      //対象のフォロワーに自分が含まれていなければフォローできる
       if (!user.followers.includes(req.body.userId)) { 
         await user.updateOne({
           $push: {
@@ -60,7 +60,7 @@ router.put('/:id/follow', async (req, res) => {
         });
         await currentUser.updateOne ({
           $push: {
-            followings: req.params.id, // 自分のfollowingに相手のidを入れる
+            followings: req.params.id, // 自分のfollowingsに相手のidを入れる
           },
         })
         return res.status(200).json('フォローしました');
@@ -74,6 +74,39 @@ router.put('/:id/follow', async (req, res) => {
     return res.status(500).json('自分のアカウントはフォローできません');
   }
 });
+
+//ユーザーのフォロー解除
+router.put('/:id/unfollow', async (req, res) => {
+  if(req.body.userId !== req.params.id ) { //自分のidと対象のidが等しくない場合
+    try {
+      const user = await User.findById( req.params.id); //対象のid
+      const currentUser = await User.findById(req.body.userId); //自分のid
+      //フォローしているのか判定
+      //対象のフォロワーに自分が含まれていなければフォローを解除できる
+      if (user.followers.includes(req.body.userId)) { 
+        await user.updateOne({
+          $pull: {
+            followers: req.body.userId, //  対象のfolloersに自分のidを入れる
+          },
+        });
+        await currentUser.updateOne ({
+          $push: {
+            followings: req.params.id, // 自分のfollowingsに相手のidを入れる
+          },
+        })
+        return res.status(200).json('フォローを解除しました');
+      } else {
+        return res.status(403).json('フォローは解除済です');
+      }
+    } catch (err) {
+      return res.status(500).json(err);
+    }
+  } else {
+    return res.status(500).json('自分のアカウントはフォローの解除はできません');
+  }
+});
+
+
 
 
 // router.get('/', (req, res) => {
